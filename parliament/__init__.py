@@ -56,7 +56,6 @@ def analyze_policy_string(
     config=None,
 ):
     """Given a string reperesenting a policy, convert it to a Policy object with findings"""
-
     try:
         # TODO Need to write my own json parser so I can track line numbers. See https://stackoverflow.com/questions/7225056/python-json-decoding-library-which-can-associate-decoded-items-with-original-li
         policy_json = jsoncfg.loads_config(policy_str)
@@ -183,14 +182,18 @@ def expand_action(action, raise_exceptions=True):
       {'service':'iam', 'action': 'ListUsers'}, ...
     ]
     """
+    extra = None
+    method = None
     if action == "*":
         action = "*:*"
 
     parts = action.split(":")
-    if len(parts) != 2:
-        raise ValueError("Action should be in form service:action")
-    prefix = parts[0]
-    unexpanded_action = parts[1]
+    if len(parts) <= 0 or len(parts) > 4:
+        raise ValueError("Action should be in form service:action or branch:symbol/service:method/access level:name")
+    if parts[0] == 'bizfly':
+        extra, prefix, method, unexpanded_action = parts
+    else:
+        prefix, unexpanded_action = parts
 
     actions = []
     service_match = None
@@ -219,6 +222,11 @@ def expand_action(action, raise_exceptions=True):
         raise UnknownPrefixException("Unknown prefix {}".format(prefix))
 
     if len(actions) == 0 and raise_exceptions:
+        if extra and method:
+            raise UnknownActionException(
+                "Unknown action {}:{}:{}:{}".format(extra, prefix, method, unexpanded_action)
+            )
+
         raise UnknownActionException(
             "Unknown action {}:{}".format(prefix, unexpanded_action)
         )

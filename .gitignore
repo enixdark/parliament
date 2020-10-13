@@ -13,3 +13,5 @@ parliament/private_auditors
 tmp/*
 .idea/*
 .vscode
+*.bk
+main.py

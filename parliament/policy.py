@@ -220,7 +220,6 @@ class Policy:
 
         In either case, it will create Findings if there are any.
         """
-
         # Check no unknown elements exist
         element_strings = []
         for element in self.policy_json:

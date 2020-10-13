@@ -87,7 +87,7 @@ def get_arn_format(resource_type, service_resources):
 
 
 def is_valid_region(str):
-    region_regex = re.compile("^([a-z]{2}|us-gov)-[a-z]+-[0-9]$")
+    region_regex = re.compile("^(([a-z]{2}|us-gov)-[a-z]+-[0-9]|hn|hcm\d+)$")
     if str == "" or str == "*" or region_regex.match(str):
         return True
     return False
@@ -96,7 +96,7 @@ def is_valid_region(str):
 def is_valid_account_id(str):
     # TODO I may want to check for common place holder values for account ids,
     # such as 000000000000 and 123456789012
-    account_id_regex = re.compile("^[0-9]{12}$")
+    account_id_regex = re.compile("^[a-z0-9]+$")
     if str == "" or str == "*" or account_id_regex.match(str):
         return True
     return False
@@ -294,7 +294,6 @@ class Statement:
         or because the action is not in the NotAction. For example, if we have an Allow on NotAction "ec2:*",
         then this, with "s3" "GetObject" returns True.
         """
-
         if "Action" in self.stmt:
             for action in make_list(self.stmt["Action"]):
                 if action.value == "*" or action.value == "*:*":
@@ -646,7 +645,6 @@ class Statement:
         actions = []
         resources = []
         conditions = []
-
         # Check no unknown elements exist
         for element in self.stmt:
             if element[0] not in [
@@ -779,7 +777,7 @@ class Statement:
             if action.value == "*" or action.value == "*:*":
                 # TODO Should ensure the resource is "*" with this action
                 continue
-
+            
             try:
                 # Given an action such as "s3:List*", return all the possible values it could have
                 expanded_actions.extend(expand_action(action.value))
@@ -826,7 +824,7 @@ class Statement:
                     "INVALID_ARN", detail="Does not start with arn:", location=resource,
                 )
                 continue
-            elif parts[1] not in ["aws", "aws-cn", "aws-us-gov", "aws-iso", "*", ""]:
+            elif parts[1] not in ["aws", "aws-cn", "aws-us-gov", "aws-iso", "*", "bizfly"]:
                 has_malformed_resource = True
                 self.add_finding(
                     "INVALID_ARN", detail="Unexpected partition", location=resource,
@@ -860,7 +858,6 @@ class Statement:
         # but only lists a resource of  "arn:aws:ec2:*:*:instance/*" instead of all the required
         # resources.
         # https://github.com/SummitRoute/aws_managed_policies/blob/4b71905a9042e66b22bc3d2b9cb1378b1e1d239e/policies/AWSEC2SpotServiceRolePolicy#L21
-
         if not has_malformed_resource and self.effect_allow:
             actions_without_matching_resources = []
             # Ensure the required resources for each action exist
